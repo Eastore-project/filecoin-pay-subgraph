@@ -1,0 +1,231 @@
+# Primary Entities
+
+type Token @entity(immutable: false) {
+  id: Bytes! # token address
+  name: String!
+  symbol: String!
+  decimals: BigInt!
+
+  # Aggregate metrics
+  volume: BigInt!
+  totalDeposits: BigInt!
+  totalWithdrawals: BigInt!
+  totalSettledAmount: BigInt!
+  totalUsers: BigInt!
+  userFunds: BigInt! # sum of all UserToken.funds for this token
+  operatorCommission: BigInt!
+
+  # Fee tracking
+  totalFees: BigInt! # Total 0.5% fees collected in THIS token
+  # TODO: after the burnforfee event
+  # accumulatedFees: BigInt! # Fees pending Dutch auction (for ERC20 tokens)
+  # totalFilBurnedForFees: BigInt! # FIL burned via burnForFees to buy this token's fees
+
+  # Relationships
+  userTokens: [UserToken!]! @derivedFrom(field: "token")
+  rails: [Rail!]! @derivedFrom(field: "token")
+  # TODO: after the burnforfee event
+  # feeAuctionPurchases: [FeeAuctionPurchase!]! @derivedFrom(field: "token")
+}
+
+type Account @entity(immutable: false) {
+  id: Bytes! # address
+  address: Bytes!
+  totalRails: BigInt!
+  totalTokens: BigInt!
+  totalApprovals: BigInt!
+
+  # Relationships
+  payerRails: [Rail!]! @derivedFrom(field: "payer")
+  payeeRails: [Rail!]! @derivedFrom(field: "payee")
+  operatorApprovals: [OperatorApproval!]! @derivedFrom(field: "client")
+  userTokens: [UserToken!]! @derivedFrom(field: "account")
+}
+
+type Operator @entity(immutable: false) {
+  id: Bytes! # address
+  address: Bytes!
+  totalRails: BigInt!
+  totalTokens: BigInt!
+  totalApprovals: BigInt!
+
+  # Relationships
+  operatorTokens: [OperatorToken!]! @derivedFrom(field: "operator")
+  rails: [Rail!]! @derivedFrom(field: "operator")
+  operatorApprovals: [OperatorApproval!]! @derivedFrom(field: "operator")
+}
+
+type UserToken @entity(immutable: false) {
+  id: Bytes! # account address + token address
+  funds: BigInt!
+  lockupCurrent: BigInt!
+  lockupRate: BigInt!
+  lockupLastSettledUntilEpoch: BigInt!
+  lockupLastSettledUntilTimestamp: BigInt!
+  payout: BigInt!
+  fundsCollected: BigInt!
+
+  # Relationships
+  account: Account!
+  token: Token!
+}
+
+type OperatorToken @entity(immutable: false) {
+  id: Bytes! # operator address + token address
+  commissionEarned: BigInt!
+  volume: BigInt!
+  lockupAllowance: BigInt!
+  rateAllowance: BigInt!
+  lockupUsage: BigInt!
+  rateUsage: BigInt!
+  settledAmount: BigInt!
+
+  # Relationships
+  operator: Operator!
+  token: Token!
+}
+
+type OperatorApproval @entity(immutable: false) {
+  id: Bytes! # client address + operator address + token address
+  isApproved: Boolean!
+  maxLockupPeriod: BigInt!
+  lockupAllowance: BigInt!
+  rateAllowance: BigInt!
+  lockupUsage: BigInt!
+  rateUsage: BigInt!
+
+  # Relationships
+  client: Account!
+  operator: Operator!
+  token: Token!
+}
+
+enum RailState {
+  ZERORATE
+  ACTIVE
+  TERMINATED
+  FINALIZED
+}
+
+type Rail @entity(immutable: false) {
+  id: Bytes! # railId as bytes
+  railId: BigInt!
+  paymentRate: BigInt!
+  lockupFixed: BigInt!
+  lockupPeriod: BigInt!
+  settledUpto: BigInt!
+  state: RailState!
+  endEpoch: BigInt!
+  validator: Bytes!
+  commissionRateBps: BigInt!
+  serviceFeeRecipient: Bytes!
+
+  # Aggregate data
+  totalSettledAmount: BigInt!
+  totalNetPayeeAmount: BigInt!
+  totalCommission: BigInt!
+  totalFees: BigInt! # Total 0.5% fees collected from this rail
+  totalSettlements: BigInt!
+  totalOneTimePayments: BigInt!
+  totalRateChanges: BigInt!
+
+  createdAt: BigInt!
+
+  # Relationships
+  payer: Account!
+  payee: Account!
+  operator: Operator!
+  token: Token!
+
+  # Derived fields
+  settlements: [Settlement!]! @derivedFrom(field: "rail")
+  oneTimePayments: [OneTimePayment!]! @derivedFrom(field: "rail")
+  rateChangeQueue: [RateChangeQueue!]! @derivedFrom(field: "rail")
+  lockupModifications: [LockupModification!]! @derivedFrom(field: "rail")
+}
+
+# Event Entities (Immutable)
+
+type Settlement @entity(immutable: true) {
+  id: Bytes! # txHash + logIndex
+  rail: Rail!
+  totalSettledAmount: BigInt! # Gross amount
+  totalNetPayeeAmount: BigInt! # Net to payee
+  fee: BigInt! # 0.5% fee in rail's token (accumulates for auction)
+  operatorCommission: BigInt!
+  settledUpto: BigInt!
+
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type OneTimePayment @entity(immutable: true) {
+  id: Bytes! # txHash + logIndex
+  rail: Rail!
+  netPayeeAmount: BigInt!
+  operatorCommission: BigInt!
+  fee: BigInt! # 0.5% fee in rail's token (NOT FIL burned)
+  grossAmount: BigInt! # Calculated: netPayee + commission + fee
+
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type LockupModification @entity(immutable: true) {
+  id: Bytes! # txHash + logIndex
+  rail: Rail!
+  oldLockupPeriod: BigInt!
+  newLockupPeriod: BigInt!
+  oldLockupFixed: BigInt!
+  newLockupFixed: BigInt!
+
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type RateChangeQueue @entity(immutable: false) {
+  id: Bytes! # railId + startEpoch
+  startEpoch: BigInt!
+  untilEpoch: BigInt!
+  rate: BigInt!
+  rail: Rail!
+}
+# TODO: after the burnforfee event
+# type FeeAuctionPurchase @entity(immutable: true) {
+#  id: Bytes! # txHash + call index
+#  token: Token! # Token whose fees were purchased
+#  recipient: Bytes! # Who received the fees
+#  amountPurchased: BigInt! # Amount of fees purchased (in token)
+#  filBurned: BigInt! # FIL sent (msg.value)
+
+#  blockNumber: BigInt!
+#  blockTimestamp: BigInt!
+#  transactionHash: Bytes!
+#}
+
+# Global Metrics (singleton)
+# Time-based metrics can be computed via GraphQL queries on the indexed data
+
+type PaymentsMetric @entity(immutable: false) {
+  id: Bytes! # "global"
+  totalRails: BigInt!
+  totalOperators: BigInt!
+  totalTokens: BigInt!
+  totalAccounts: BigInt!
+  totalFilBurned: BigInt! # Total FIL burned (native settlements only)
+  totalRailSettlements: BigInt!
+  totalOneTimePayments: BigInt!
+  totalZeroRateRails: BigInt!
+  totalActiveRails: BigInt!
+  totalTerminatedRails: BigInt!
+  totalFinalizedRails: BigInt!
+#  TODO: after the burnforfee event
+#  totalFeeAuctionPurchases: BigInt!
+
+  # Unique payers and payees
+  uniquePayers: BigInt!
+  uniquePayees: BigInt!
+}

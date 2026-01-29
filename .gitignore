@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+build/
+generated/
+tests/.bin/
+
+# Generated files (root level only, not source files in subdirs)
+/schema.graphql
+/subgraph.yaml
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+tests/.latest.json

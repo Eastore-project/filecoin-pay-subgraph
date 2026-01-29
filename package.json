@@ -1,0 +1,29 @@
+{
+  "name": "filecoin-pay-subgraph",
+  "version": "1.0.0",
+  "description": "Subgraph for FilecoinPayV1 contract - indexes payments, rails, settlements, and fee auctions",
+  "private": true,
+  "scripts": {
+    "precodegen": "rm -rf ./generated && pnpm generate:schema && pnpm generate:yaml",
+    "codegen": "graph codegen",
+    "generate:yaml": "node scripts/generate-config.js",
+    "generate:schema": "cp ./schemas/schema.graphql schema.graphql",
+    "prebuild": "pnpm codegen",
+    "build": "graph build",
+    "clean": "rm -rf ./generated ./build ./schema.graphql ./subgraph.yaml",
+    "deploy:calibration": "NETWORK=calibration pnpm build && goldsky subgraph deploy filecoin-pay-calibration/1.0.0 --path .",
+    "deploy:mainnet": "NETWORK=mainnet pnpm build && goldsky subgraph deploy filecoin-pay-mainnet/1.0.0 --path .",
+    "pretest": "pnpm codegen",
+    "test": "graph test",
+    "test:coverage": "graph test -c"
+  },
+  "dependencies": {
+    "@graphprotocol/graph-cli": "^0.97.0",
+    "@graphprotocol/graph-ts": "^0.38.1"
+  },
+  "devDependencies": {
+    "assemblyscript": "0.19.23",
+    "matchstick-as": "^0.6.0",
+    "mustache": "^4.2.0"
+  }
+}
