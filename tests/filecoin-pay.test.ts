@@ -333,12 +333,12 @@ describe("FilecoinPayV1 Subgraph", () => {
         "totalFees",
         "0"
       );
-      // assert.fieldEquals(
-      //   "Token",
-      //   TOKEN_ADDRESS.toHexString(),
-      //   "accumulatedFees",
-      //   "0"
-      // );
+      assert.fieldEquals(
+        "Token",
+        TOKEN_ADDRESS.toHexString(),
+        "accumulatedFees",
+        "0"
+      );
     });
 
     test("updates PaymentsMetric", () => {

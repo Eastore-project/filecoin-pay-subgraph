@@ -47,13 +47,12 @@ export function getLockupModificationEntityId(
 ): Bytes {
   return txHash.concatI32(logIndex.toI32());
 }
-// TODO: after the burnforfee event
-// export function getFeeAuctionPurchaseEntityId(
-//   txHash: Bytes,
-//   callIndex: i32
-// ): Bytes {
-//   return txHash.concatI32(callIndex);
-// }
+export function getFeeAuctionPurchaseEntityId(
+  txHash: Bytes,
+  callIndex: i32
+): Bytes {
+  return txHash.concatI32(callIndex);
+}
 
 export function getPaymentsMetricEntityId(): Bytes {
   return Bytes.fromUTF8(PAYMENTS_METRIC_ID);

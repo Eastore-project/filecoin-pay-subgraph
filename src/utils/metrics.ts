@@ -21,8 +21,7 @@ export function loadOrCreatePaymentsMetric(): PaymentsMetric {
     metric.totalActiveRails = ZERO_BIG_INT;
     metric.totalTerminatedRails = ZERO_BIG_INT;
     metric.totalFinalizedRails = ZERO_BIG_INT;
-    // TODO: after the burnforfee event
-    // metric.totalFeeAuctionPurchases = ZERO_BIG_INT;
+    metric.totalFeeAuctionPurchases = ZERO_BIG_INT;
     metric.uniquePayers = ZERO_BIG_INT;
     metric.uniquePayees = ZERO_BIG_INT;
   }
@@ -80,12 +79,11 @@ export function incrementTotalOneTimePayments(): void {
   metric.totalOneTimePayments = metric.totalOneTimePayments.plus(ONE_BIG_INT);
   metric.save();
 }
-// TODO: after the burnforfee event
-// export function incrementTotalFeeAuctionPurchases(): void {
-//   const metric = loadOrCreatePaymentsMetric();
-//   metric.totalFeeAuctionPurchases = metric.totalFeeAuctionPurchases.plus(ONE_BIG_INT);
-//   metric.save();
-// }
+export function incrementTotalFeeAuctionPurchases(): void {
+  const metric = loadOrCreatePaymentsMetric();
+  metric.totalFeeAuctionPurchases = metric.totalFeeAuctionPurchases.plus(ONE_BIG_INT);
+  metric.save();
+}
 
 export function addFilBurned(amount: GraphBN): void {
   if (amount.equals(ZERO_BIG_INT)) return;

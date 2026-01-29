@@ -31,7 +31,7 @@ dataSources:
         - Account
         - Operator
         - OperatorToken
-        # - FeeAuctionPurchase
+        - FeeAuctionPurchase
         - PaymentsMetric
       abis:
         - name: FilecoinPayV1
@@ -61,4 +61,7 @@ dataSources:
           handler: handleWithdrawRecorded
         - event: AccountLockupSettled(indexed address,indexed address,uint256,uint256,uint256)
           handler: handleAccountLockupSettled
+      callHandlers:
+        - function: burnForFees(address,address,uint256)
+          handler: handleBurnForFees
       file: ./src/filecoin-pay.ts

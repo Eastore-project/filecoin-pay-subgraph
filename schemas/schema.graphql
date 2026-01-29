@@ -17,15 +17,13 @@ type Token @entity(immutable: false) {
 
   # Fee tracking
   totalFees: BigInt! # Total 0.5% fees collected in THIS token
-  # TODO: after the burnforfee event
-  # accumulatedFees: BigInt! # Fees pending Dutch auction (for ERC20 tokens)
-  # totalFilBurnedForFees: BigInt! # FIL burned via burnForFees to buy this token's fees
+  accumulatedFees: BigInt! # Fees pending Dutch auction (for ERC20 tokens)
+  totalFilBurnedForFees: BigInt! # FIL burned via burnForFees to buy this token's fees
 
   # Relationships
   userTokens: [UserToken!]! @derivedFrom(field: "token")
   rails: [Rail!]! @derivedFrom(field: "token")
-  # TODO: after the burnforfee event
-  # feeAuctionPurchases: [FeeAuctionPurchase!]! @derivedFrom(field: "token")
+  feeAuctionPurchases: [FeeAuctionPurchase!]! @derivedFrom(field: "token")
 }
 
 type Account @entity(immutable: false) {
@@ -193,18 +191,18 @@ type RateChangeQueue @entity(immutable: false) {
   rate: BigInt!
   rail: Rail!
 }
-# TODO: after the burnforfee event
-# type FeeAuctionPurchase @entity(immutable: true) {
-#  id: Bytes! # txHash + call index
-#  token: Token! # Token whose fees were purchased
-#  recipient: Bytes! # Who received the fees
-#  amountPurchased: BigInt! # Amount of fees purchased (in token)
-#  filBurned: BigInt! # FIL sent (msg.value)
 
-#  blockNumber: BigInt!
-#  blockTimestamp: BigInt!
-#  transactionHash: Bytes!
-#}
+type FeeAuctionPurchase @entity(immutable: true) {
+  id: Bytes! # txHash + call index
+  token: Token! # Token whose fees were purchased
+  recipient: Bytes! # Who received the fees
+  amountPurchased: BigInt! # Amount of fees purchased (in token)
+  filBurned: BigInt! # FIL sent (msg.value)
+
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
 
 # Global Metrics (singleton)
 # Time-based metrics can be computed via GraphQL queries on the indexed data
@@ -215,15 +213,14 @@ type PaymentsMetric @entity(immutable: false) {
   totalOperators: BigInt!
   totalTokens: BigInt!
   totalAccounts: BigInt!
-  totalFilBurned: BigInt! # Total FIL burned (native settlements only)
+  totalFilBurned: BigInt! # Total FIL burned (native settlements + auction purchases)
   totalRailSettlements: BigInt!
   totalOneTimePayments: BigInt!
   totalZeroRateRails: BigInt!
   totalActiveRails: BigInt!
   totalTerminatedRails: BigInt!
   totalFinalizedRails: BigInt!
-#  TODO: after the burnforfee event
-#  totalFeeAuctionPurchases: BigInt!
+  totalFeeAuctionPurchases: BigInt!
 
   # Unique payers and payees
   uniquePayers: BigInt!

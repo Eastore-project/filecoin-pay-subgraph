@@ -102,9 +102,8 @@ export function getTokenDetails(address: Address): TokenWithIsNew {
     token.operatorCommission = ZERO_BIG_INT;
     token.totalUsers = ZERO_BIG_INT;
     token.totalFees = ZERO_BIG_INT;
-    // TODO: after the burnforfee event
-    // token.accumulatedFees = ZERO_BIG_INT;
-    // token.totalFilBurnedForFees = ZERO_BIG_INT;
+    token.accumulatedFees = ZERO_BIG_INT;
+    token.totalFilBurnedForFees = ZERO_BIG_INT;
 
     return new TokenWithIsNew(token, true);
   }

@@ -1,6 +1,18 @@
 # Filecoin Pay Subgraph
 
-A subgraph that indexes the `FilecoinPayV1` contract, providing data for the `filecoin-pay-explorer` and `autocap-dashboard`.
+A subgraph that indexes the `FilecoinPayV1` contract and provides all the data exposed by the events.
+
+## Table of Contents
+
+- [Features](#features)
+- [Entity Overview](#entity-overview)
+- [Key Design Decisions](#key-design-decisions)
+- [Development](#development)
+- [Deployment](#deployment)
+- [Network Configuration](#network-configuration)
+- [GraphQL Query Examples](#graphql-query-examples)
+- [Contributing](#contributing)
+- [License](#license)
 
 ## Features
 
@@ -42,15 +54,17 @@ A subgraph that indexes the `FilecoinPayV1` contract, providing data for the `fi
 ### Fee Tracking
 - `Settlement.fee` / `OneTimePayment.fee` = 0.5% taken from payment in rail's token
 - For native FIL rails: fee is burned directly (`Token.totalFees` = FIL burned, `PaymentsMetric.totalFilBurned` increases)
-- For ERC20 rails: fee goes to the contract for Dutch auction purchase
-- `PaymentsMetric.totalFilBurned` currently only tracks native FIL burns from settlements/one-time payments
+- For ERC20 rails: fee accumulates in `Token.accumulatedFees` for Dutch auction purchase via `burnForFees`
+- `PaymentsMetric.totalFilBurned` tracks all FIL burned (native settlements + auction purchases)
 
-### Future: Fee Auction Tracking (TODO)
-Once a `FeesPurchased` event is added to the contract, the following will be implemented:
-- `FeeAuctionPurchase` entity to track Dutch auction purchases
-- `Token.accumulatedFees` to track fees pending auction (ERC20 tokens)
-- `Token.totalFilBurnedForFees` to track FIL burned to purchase token fees
+### Fee Auction Tracking (burnForFees)
+The subgraph tracks Dutch auction purchases via a call handler for the `burnForFees` function:
+- `FeeAuctionPurchase` entity records each auction purchase
+- `Token.accumulatedFees` tracks fees pending auction (ERC20 tokens)
+- `Token.totalFilBurnedForFees` tracks FIL burned to purchase token fees
 - `PaymentsMetric.totalFeeAuctionPurchases` counter
+
+**Goldsky Call Handler Support**: Call handlers are only supported on Filecoin mainnet in Goldsky. For testnet deployments, use the `testnet` branch which excludes call handlers.
 
 
 ### OneTimePayment Entity
@@ -102,6 +116,10 @@ pnpm test:coverage
 
 ### Goldsky
 
+Call handlers are only supported on Filecoin mainnet in Goldsky. Use the appropriate branch:
+- **Mainnet**: `main` branch (includes `burnForFees` call handler)
+- **Testnet**: `testnet` branch (no call handlers)
+
 ```bash
 # Install Goldsky CLI
 curl https://goldsky.com | sh
@@ -109,11 +127,13 @@ curl https://goldsky.com | sh
 # Login
 goldsky login
 
-# Deploy to Calibration
+# Deploy to Calibration (use testnet branch)
+git checkout testnet
 NETWORK=calibration pnpm build
 goldsky subgraph deploy filecoin-pay-calibration/1.0.0 --path .
 
-# Deploy to Mainnet
+# Deploy to Mainnet (use main branch)
+git checkout main
 NETWORK=mainnet pnpm build
 goldsky subgraph deploy filecoin-pay-mainnet/1.0.0 --path .
 ```
@@ -191,10 +211,59 @@ query {
   tokens {
     symbol
     totalFees
+    accumulatedFees
+    totalFilBurnedForFees
   }
 }
 ```
 
+### Get Fee Auction Purchases
+```graphql
+query {
+  feeAuctionPurchases(orderBy: blockTimestamp, orderDirection: desc, first: 10) {
+    token { symbol }
+    recipient
+    amountPurchased
+    filBurned
+    blockTimestamp
+  }
+}
+```
+
+## Contributing
+
+Contributions are welcome! Please follow these guidelines:
+
+1. **Fork the repository** and create your branch from `main`
+2. **Install dependencies** with `pnpm install`
+3. **Make your changes** and ensure code follows existing patterns
+4. **Run tests** with `pnpm test` and ensure they pass
+5. **Build** with `pnpm build` to verify compilation
+6. **Submit a pull request** with a clear description of changes
+
+### Development Workflow
+
+```bash
+# Install dependencies
+pnpm install
+
+# Generate types after schema changes
+pnpm codegen
+
+# Run tests
+pnpm test
+
+# Build for verification
+pnpm build
+```
+
+### Branch Strategy
+
+- `main` - Production branch with call handlers (for mainnet)
+- `testnet` - Testnet branch without call handlers (Goldsky limitation)
+
+When making changes that affect both branches, ensure compatibility or update both accordingly.
+
 ## License
 
-Apache-2.0 OR MIT
+MIT
