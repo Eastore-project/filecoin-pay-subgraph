@@ -66,6 +66,8 @@ The subgraph tracks Dutch auction purchases via a call handler for the `burnForF
 
 **Goldsky Call Handler Support**: Call handlers are only supported on Filecoin mainnet in Goldsky. For testnet deployments, use the `testnet` branch which excludes call handlers.
 
+> **Note: Fee-on-transfer tokens are not supported.** The contract handles fee-on-transfer tokens by deducting the actual balance change ([`FilecoinPayV1.sol:1785-1786`](../filecoin-pay/src/FilecoinPayV1.sol#L1785-L1786)), but the subgraph uses the `requested` parameter since call handlers don't have access to the actual transfer amount. For standard tokens like USDC/axlUSDC, `actual == requested`, so tracking is accurate. See [`src/filecoin-pay.ts:808`](src/filecoin-pay.ts#L808) for implementation details.
+
 
 ### OneTimePayment Entity
 One-time payments are tracked separately from rate-based settlements:

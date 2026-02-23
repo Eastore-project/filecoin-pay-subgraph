@@ -801,6 +801,10 @@ export function handleBurnForFees(call: BurnForFeesCall): void {
   purchase.save();
 
   // Update token metrics
+  // NOTE: Fee-on-transfer tokens (where actual transferred != requested) are not supported.
+  // The contract handles these by deducting the actual balance change (see FilecoinPayV1.sol:1785-1786),
+  // but the subgraph uses `requested` since call handlers don't have access to the actual transfer amount.
+  // For standard tokens like USDC/axlUSDC, actual == requested so this is correct.
   token.accumulatedFees = token.accumulatedFees.minus(requested);
   token.totalFilBurnedForFees = token.totalFilBurnedForFees.plus(filBurned);
   token.save();
